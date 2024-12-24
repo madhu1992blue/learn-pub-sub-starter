@@ -10,7 +10,9 @@ import (
 	"os"
 )
 type Config struct {
+	connection *amqp.Connection
 	gameState *gamelogic.GameState
+	Username string
 }
 type cliCommand struct {
 	handler func(*Config,...string) error
@@ -59,7 +61,28 @@ func main() {
 		log.Fatal("Couldn't declare and bind queue: %v", err)
 	}
 	config := &Config{
+		connection: amqpConn,
 		gameState: gamelogic.NewGameState(username),
+		Username: username,
+	}
+
+	err = pubsub.SubscribeJSON(amqpConn, routing.ExchangePerilDirect, pauseQueue, routing.PauseKey, false, handlerPause(config.gameState))
+	if err != nil {
+		log.Fatalf("Couldn't subscribe to PauseQueue: %v", err)
+	}
+	
+	movesQueueName := fmt.Sprintf("%s.%s", routing.ArmyMovesPrefix , username)
+	movesRoutingKey := fmt.Sprintf("%s.*", routing.ArmyMovesPrefix)
+	err = pubsub.SubscribeJSON(amqpConn, routing.ExchangePerilTopic, movesQueueName, movesRoutingKey, false, config.handlerMove(config.gameState))
+	if err != nil {
+		log.Fatalf("Couldn't subscribe to %s queue: %v", movesQueueName, err) 
+	}
+
+	warQueueName := routing.WarRecognitionsPrefix
+	warRoutingKey := fmt.Sprintf("%s.*", routing.WarRecognitionsPrefix)
+	err = pubsub.SubscribeJSON(amqpConn, routing.ExchangePerilTopic, warQueueName, warRoutingKey, true, config.handlerWar(config.gameState))
+	if err != nil {
+		log.Fatalf("Couldn't subscribe to %s queue: %v", warQueueName, err)
 	}
 	supportedCommands := getSupportedCommands()
 	MAIN_LOOP:
