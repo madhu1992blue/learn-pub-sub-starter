@@ -84,6 +84,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Couldn't subscribe to %s queue: %v", warQueueName, err)
 	}
+
+
+	logQueueName := routing.GameLogSlug
+	logRoutingKey := fmt.Sprintf("%s.*", logQueueName)
+
+	err = pubsub.SubscribeGob(amqpConn, routing.ExchangePerilTopic,logQueueName, logRoutingKey, true, config.handlerLog(config.gameState))
+	if err != nil {
+		log.Fatalf("Couldn't subscribe to %s queue: %v", logQueueName, err)
+	}
 	supportedCommands := getSupportedCommands()
 	MAIN_LOOP:
 	for {
