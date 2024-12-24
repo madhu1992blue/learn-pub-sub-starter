@@ -18,7 +18,7 @@ type cliCommand struct {
 	handler func(*Config,...string) error
 }
 
-func getSupportedCommands() map[string]cliCommand {
+func  getSupportedCommands() map[string]cliCommand {
 	return map[string]cliCommand {
 		"spawn": cliCommand {
 			handler: command_spawn,

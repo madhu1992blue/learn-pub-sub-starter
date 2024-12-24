@@ -53,7 +53,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating Game log queue: %v", err)
 	}
+	logQueueName := routing.GameLogSlug
+	logRoutingKey := fmt.Sprintf("%s.*", logQueueName)
 
+	err = pubsub.SubscribeGob(amqpConn, routing.ExchangePerilTopic,logQueueName, logRoutingKey, true, config.handlerLog())
+	if err != nil {
+		log.Fatalf("Couldn't subscribe to %s queue: %v", logQueueName, err)
+	}
 	gamelogic.PrintServerHelp()
 	MAIN_LOOP:
 	for {
